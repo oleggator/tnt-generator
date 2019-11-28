@@ -1,0 +1,24 @@
+[
+  {
+    "name": "with_arr",
+    "fields": [
+      {
+        "name": "arr",
+        "type": {"type": "array", "items": "int"}
+      }
+    ]
+  },
+  {
+    "name": "hello_request",
+    "fields": [
+      {"name": "with_arr", "type": "with_arr"},
+      {"name": "greeting", "type": "string"}
+    ]
+  },
+  {
+    "name": "hello_response",
+    "fields": [
+      {"name": "reply", "type": "string"}
+    ]
+  }
+]
