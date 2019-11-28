@@ -21,7 +21,12 @@ func main() {
 	}
 
 	// generate models header
-	if err := generator.GenerateModelsH("./generated/models.h", cStructs); err != nil {
+	if err := generator.GenerateModelsH("generated/models.h", cStructs); err != nil {
+		log.Fatalln(err)
+	}
+
+	// generate models implementation
+	if err := generator.GenerateModelsC("generated/models.c", cStructs); err != nil {
 		log.Fatalln(err)
 	}
 }

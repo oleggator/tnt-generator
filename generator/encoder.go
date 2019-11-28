@@ -5,16 +5,16 @@ import (
 )
 
 const EncoderSignatureTemplate = `
-int encode_{{ .Name }}({{ .Name }}_t *{{ .Name }}, char **buf, char **buf_end);
-`
+int encode_{{ .Name }}({{ .Name }}_t *{{ .Name }}, char **buf, char **buf_end)`
 
 
 // TODO implement field generation
 const EncoderTemplate = `
-{{ template "EncoderSignatureTemplate" . }} {
-	{{ range .Fields }}
-	
-	{{ end }}
+{{ template "EncoderSignatureTemplate" . }}
+{
+	{{- range .Fields }}
+	// field {{ .Name }}
+	{{- end }}
 }
 `
 

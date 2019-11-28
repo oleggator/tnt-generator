@@ -5,16 +5,16 @@ import (
 )
 
 const DecoderSignatureTemplate = `
-int decode_{{ .Name }}({{ .Name }}_t *{{ .Name }}, const char **args, const char **args_end);
-`
+int decode_{{ .Name }}({{ .Name }}_t *{{ .Name }}, const char **args, const char **args_end)`
 
 
 // TODO implement field generation
 const DecoderTemplate = `
-{{ template "DecoderSignatureTemplate" . }} {
-	{{ range .Fields }}
-	
-	{{ end }}
+{{ template "DecoderSignatureTemplate" . }}
+{
+	{{- range .Fields }}
+	// field {{ .Name }}
+	{{- end }}
 }
 `
 

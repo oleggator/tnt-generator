@@ -17,8 +17,8 @@ const ModelsHTemplate = `
 
 {{ range . }}
     {{- template "StructTemplate" . }}
-    {{- template "EncoderSignatureTemplate" . }}
-    {{- template "DecoderSignatureTemplate" . }}
+    {{- template "EncoderSignatureTemplate" . -}};
+    {{- template "DecoderSignatureTemplate" . -}};
 {{ end -}}
 `
 
@@ -39,6 +39,7 @@ func GenerateModelsH(path string, structs []parser.CStruct) error {
 		return err
 	}
 	defer file.Close()
+	defer file.Sync()
 
 
 	return modelsHTemplate.Execute(file, structs)
