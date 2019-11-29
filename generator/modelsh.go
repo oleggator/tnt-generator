@@ -16,10 +16,14 @@ const ModelsHTemplate = `
 #define ARRAY_LEN 1024
 
 {{ range . }}
-    {{- template "StructTemplate" . }}
-    {{- template "EncoderSignatureTemplate" . -}};
-    {{- template "DecoderSignatureTemplate" . -}};
-{{ end -}}
+    {{ template "StructTemplate" . }}
+
+    {{ template "EncoderDocTemplate" . }}
+    {{ template "EncoderSignatureTemplate" . }};
+
+    {{ template "DecoderDocTemplate" . }}
+    {{ template "DecoderSignatureTemplate" . }};
+{{ end }}
 `
 
 func NewModelsHTemplates() *template.Template {
