@@ -3,11 +3,12 @@ package parser
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/oleggator/tnt-generator/types"
 	"io"
 	"log"
 )
 
-func Parse(reader io.Reader) ([]CStruct, error) {
+func Parse(reader io.Reader) ([]types.CStruct, error) {
 	jsonDecoder := json.NewDecoder(reader)
 
 	var schema []AvroDefinition
@@ -15,10 +16,10 @@ func Parse(reader io.Reader) ([]CStruct, error) {
 		return nil, err
 	}
 
-	cStructs := make([]CStruct, 0, len(schema))
-	cStructsMap := map[string]*CStruct{}
+	cStructs := make([]types.CStruct, 0, len(schema))
+	cStructsMap := map[string]*types.CStruct{}
 	for _, definition := range schema {
-		cStruct := CStruct{}
+		cStruct := types.CStruct{}
 		cStruct.Name = definition.Name
 
 		for _, avroField := range definition.Fields {
@@ -27,7 +28,7 @@ func Parse(reader io.Reader) ([]CStruct, error) {
 				return nil, err
 			}
 
-			cStruct.Fields = append(cStruct.Fields, CField{
+			cStruct.Fields = append(cStruct.Fields, types.CField{
 				Name: avroField.Name,
 				Type: fieldCType,
 			})
@@ -40,18 +41,24 @@ func Parse(reader io.Reader) ([]CStruct, error) {
 	return cStructs, nil
 }
 
-func getCType(avroType interface{}, parsedCStructs map[string]*CStruct, nullable bool, constant bool) (CType, error) {
+func getCType(avroType interface{}, parsedCStructs map[string]*types.CStruct, nullable bool, constant bool) (types.CType, error) {
 	var err error
 
 	switch avroType := avroType.(type) {
 	case string:
 		if avroType == Null {
-			return CType(&NullType{}), nil
+			return nil, nil
 		}
 
-		cTypeName, ok := simpleTypesMapping[avroType]
-		if ok {
-			return CType(&SimpleType{
+		if avroType == String {
+			return types.CType(&types.StringType{
+				Const:    true,
+				Nullable: nullable,
+			}), nil
+		}
+
+		if cTypeName, ok := primitiveTypesMapping[avroType]; ok {
+			return types.CType(&types.PrimitiveType{
 				Nullable: nullable,
 				Const:    constant,
 				Name:     cTypeName,
@@ -59,16 +66,16 @@ func getCType(avroType interface{}, parsedCStructs map[string]*CStruct, nullable
 		}
 
 		if cStruct, ok := parsedCStructs[avroType]; ok {
-			return CType(&NestedType{
+			return types.CType(&types.StructType{
 				Nullable: nullable,
 				Const:    constant,
-				NestedStruct: cStruct,
+				Struct:   cStruct,
 			}), nil
 		}
 
-		return nil, fmt.Errorf(`there is no "%s" type`, cTypeName)
+		return nil, fmt.Errorf(`there is no "%s" type`, avroType)
 
-	case map[string]interface{}:
+	case map[string]interface{}: // complex type
 		typeType, ok := avroType["type"].(string)
 		if !ok {
 			return nil, fmt.Errorf(`invalid type of type`)
@@ -76,7 +83,7 @@ func getCType(avroType interface{}, parsedCStructs map[string]*CStruct, nullable
 
 		switch typeType {
 		case Array:
-			array := &ArrayType{
+			array := &types.ArrayType{
 				Nullable: nullable,
 				Const:    constant,
 			}
@@ -90,14 +97,14 @@ func getCType(avroType interface{}, parsedCStructs map[string]*CStruct, nullable
 				return nil, err
 			}
 
-			return CType(array), nil
+			return types.CType(array), nil
 
 		default:
 			return nil, fmt.Errorf(`type "%s" is not implemented`, typeType)
 		}
 
-	case []interface{}:
-		if len(avroType) != 2  {
+	case []interface{}: // Union
+		if len(avroType) != 2 {
 			return nil, fmt.Errorf(`unsupported union type: allowed only [null, X]`)
 		}
 
@@ -111,18 +118,15 @@ func getCType(avroType interface{}, parsedCStructs map[string]*CStruct, nullable
 			return nil, err
 		}
 
-		_, element1IsNull := element1.(*NullType)
-		_, element2IsNull := element2.(*NullType)
-
-		if element1IsNull && element2IsNull {
+		if element1 == nil && element2 == nil {
 			return nil, fmt.Errorf(`unsupported union type: allowed only [null, X]`)
 		}
 
-		if element1IsNull {
+		if element1 == nil {
 			return element2, nil
 		}
 
-		if element2IsNull {
+		if element2 == nil {
 			return element1, nil
 		}
 
@@ -132,4 +136,3 @@ func getCType(avroType interface{}, parsedCStructs map[string]*CStruct, nullable
 
 	return nil, nil
 }
-

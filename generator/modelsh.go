@@ -1,7 +1,7 @@
 package generator
 
 import (
-	"github.com/oleggator/tnt-generator/parser"
+	"github.com/oleggator/tnt-generator/types"
 	"os"
 	"text/template"
 )
@@ -12,6 +12,7 @@ const ModelsHTemplate = `
 #pragma once
 
 #include <stdint.h>
+#include <tarantool/module.h>
 
 #define ARRAY_LEN 1024
 
@@ -37,13 +38,16 @@ func NewModelsHTemplates() *template.Template {
 	return tpl
 }
 
-func GenerateModelsH(path string, structs []parser.CStruct) error {
+func GenerateModelsH(path string, structs []types.CStruct) error {
 	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
 		return err
 	}
+	if err := file.Truncate(0); err != nil {
+		return err
+	}
+
 	defer file.Close()
-	defer file.Sync()
 
 
 	return modelsHTemplate.Execute(file, structs)

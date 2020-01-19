@@ -2,7 +2,7 @@ package generator
 
 import (
 	"fmt"
-	"github.com/oleggator/tnt-generator/parser"
+	"github.com/oleggator/tnt-generator/types"
 	"text/template"
 )
 
@@ -10,7 +10,7 @@ const StructTemplate = `
 typedef struct {
 {{- range .Fields }}
 	{{ getFieldDefinition . }}
-	{{- if isArray .Type }}
+	{{- if IsWithLen .Type }}
 	uint32_t {{ .Name }}_len;
 	{{- end }}
 {{- end}}
@@ -20,58 +20,38 @@ typedef struct {
 func initStructTemplate(parentTemplate *template.Template) {
 	funcMap := template.FuncMap{
 		"getFieldDefinition": getFieldDefinition,
-		"isArray":            isArray,
+		"IsWithLen":          IsWithLen,
 	}
 
 	template.Must(parentTemplate.New("StructTemplate").Funcs(funcMap).Parse(StructTemplate))
 }
 
-func isArray(object interface{}) bool {
-	_, ok := object.(*parser.ArrayType)
-	return ok
+func IsWithLen(object interface{}) bool {
+	if _, ok := object.(*types.ArrayType); ok {
+		return true
+	}
+
+	if _, ok := object.(*types.StringType); ok {
+		return true
+	}
+
+	return false
 }
 
-func getFieldDefinition(field *parser.CField) (string, error) {
+func getFieldDefinition(field *types.CField) (string, error) {
 	fieldName := field.Name
+	typeName := field.Type.GetName()
 
-	switch fieldType := field.Type.(type) {
-	case *parser.SimpleType:
-		typeName, err := getTypeName(fieldType)
-		if err != nil {
-			return "", err
-		}
+	switch field.Type.(type) {
+	case *types.PrimitiveType:
 		return fmt.Sprintf("%s %s;", typeName, fieldName), nil
-
-	case *parser.ArrayType:
-		typeName, err := getTypeName(fieldType.ItemType)
-		if err != nil {
-			return "", err
-		}
-
+	case *types.StringType:
+		return fmt.Sprintf("%s %s;", typeName, fieldName), nil
+	case *types.ArrayType:
 		return fmt.Sprintf("%s %s[ARRAY_LEN];", typeName, fieldName), nil
-
-	case *parser.NestedType:
-		typeName, err := getTypeName(fieldType)
-		if err != nil {
-			return "", err
-		}
+	case *types.StructType:
 		return fmt.Sprintf("%s_t %s;", typeName, fieldName), nil
 	}
 
-	return "", fmt.Errorf("unsupported field %T", field.Type)
-}
-
-func getTypeName(cType parser.CType) (string, error) {
-	switch fieldType := cType.(type) {
-	case *parser.SimpleType:
-		return fieldType.Name, nil
-
-	case *parser.ArrayType:
-		return getTypeName(fieldType.ItemType)
-
-	case *parser.NestedType:
-		return fieldType.NestedStruct.Name, nil
-	}
-
-	return "", fmt.Errorf("unsupported field %T", cType)
+	return "", fmt.Errorf("unsupported field type %T", field.Type)
 }

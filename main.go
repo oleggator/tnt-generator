@@ -29,4 +29,8 @@ func main() {
 	if err := generator.GenerateModelsC("generated/models.c", cStructs); err != nil {
 		log.Fatalln(err)
 	}
+
+	if err := generator.Format("generated/models.h", "generated/models.c"); err != nil {
+		log.Fatalln(err)
+	}
 }

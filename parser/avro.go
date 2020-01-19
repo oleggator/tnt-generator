@@ -2,12 +2,13 @@ package parser
 
 // Types
 const (
-	Array = "array"
-	Null = "null"
+	Array  = "array"
+	String = "string"
+	Null   = "null"
 )
 
 type AvroField struct {
-	Name string `json:"name"`
+	Name string      `json:"name"`
 	Type interface{} `json:"type"`
 }
 
@@ -17,15 +18,12 @@ type AvroDefinition struct {
 	Fields      []AvroField `json:"fields"`
 }
 
-var simpleTypesMapping = map[string]string{
-	"int":     "int32_t",
-	"integer": "int32_t",
+var primitiveTypesMapping = map[string]string{
+	"int":     "int64_t",
+	"integer": "int64_t",
 
-	"uint":     "uint32_t",
-	"unsigned": "uint32_t",
+	"uint":     "uint64_t",
+	"unsigned": "uint64_t",
 
-	"float":  "float",
 	"double": "double",
-
-	"string": "char *",
 }

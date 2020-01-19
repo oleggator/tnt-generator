@@ -1,7 +1,7 @@
 package generator
 
 import (
-	"github.com/oleggator/tnt-generator/parser"
+	"github.com/oleggator/tnt-generator/types"
 	"os"
 	"text/template"
 )
@@ -32,11 +32,15 @@ func NewModelsCTemplates() *template.Template {
 	return tpl
 }
 
-func GenerateModelsC(path string, structs []parser.CStruct) error {
+func GenerateModelsC(path string, structs []types.CStruct) error {
 	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
 		return err
 	}
+	if err = file.Truncate(0); err != nil {
+		return err
+	}
+
 	defer file.Close()
 	defer file.Sync()
 
