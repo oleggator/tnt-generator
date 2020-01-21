@@ -5,8 +5,16 @@
 
 #include "models.h"
 
-int encode_with_arr(with_arr_t *with_arr, char **buf, char **buf_end) {
+int encode_with_arr(with_arr_t *with_arr, char *buf, char *buf_end) {
+  int err = 0;
+  char *end;
+  end = mp_encode_array(buf, 1);
   // field arr
+
+  end = mp_encode_array(buf, with_arr->arr_len);
+  for (uint32_t i = 0; i < with_arr->arr_len; ++i) {
+    end = mp_encode_int(end, with_arr->arr[i]);
+  }
 }
 
 int decode_with_arr(with_arr_t *with_arr, const char **buf,
@@ -34,10 +42,21 @@ too_big_array:
   return 2;
 }
 
-int encode_hello_request(hello_request_t *hello_request, char **buf,
-                         char **buf_end) {
+int encode_hello_request(hello_request_t *hello_request, char *buf,
+                         char *buf_end) {
+  int err = 0;
+  char *end;
+  end = mp_encode_array(buf, 2);
   // field with_arr
+
+  err = encode_with_arr(&hello_request->with_arr, buf, buf_end);
+  if (err != 0) {
+    return err;
+  };
+
   // field greeting
+  end =
+      mp_encode_str(end, hello_request->greeting, hello_request->greeting_len);
 }
 
 int decode_hello_request(hello_request_t *hello_request, const char **buf,
@@ -68,9 +87,13 @@ too_big_array:
   return 2;
 }
 
-int encode_hello_response(hello_response_t *hello_response, char **buf,
-                          char **buf_end) {
+int encode_hello_response(hello_response_t *hello_response, char *buf,
+                          char *buf_end) {
+  int err = 0;
+  char *end;
+  end = mp_encode_array(buf, 1);
   // field reply
+  end = mp_encode_str(end, hello_response->reply, hello_response->reply_len);
 }
 
 int decode_hello_response(hello_response_t *hello_response, const char **buf,

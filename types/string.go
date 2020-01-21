@@ -26,3 +26,7 @@ func (at *StringType) GetName() string {
 func (st *StringType) GetDecodeProcedure(buf string, dst string) (string, error) {
 	return fmt.Sprintf("mp_decode_str(%s, %s)", buf, dst), nil
 }
+
+func (st *StringType) GetEncodeProcedure(dst, src string, strLen string) (string, error) {
+	return fmt.Sprintf("mp_encode_str(%s, %s, %s)", dst, src, strLen), nil
+}
