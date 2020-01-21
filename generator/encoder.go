@@ -25,8 +25,8 @@ const EncoderTemplate = `
 {{ template "EncoderSignatureTemplate" . }}
 {
 	int err = 0;
-	char *end;
-	end = mp_encode_array(buf, {{ len .Fields }});
+	char *end = buf;
+	end = mp_encode_array(end, {{ len .Fields }});
 
 	{{- range .Fields }}
 	// field {{ .Name }}
@@ -49,6 +49,11 @@ func getEncodeProcedure(cStruct *types.CStruct, field *types.CField) (string, er
 	fieldName := field.Name
 	typeName := field.Type.GetName()
 
+	const buf = "buf"
+	const bufEnd = "buf_end"
+	const dataEnd = "end"
+	src := fmt.Sprintf("%s->%s", cStruct.Name, fieldName)
+
 	switch fieldType := field.Type.(type) {
 	case *types.ArrayType:
 		primitiveType, isPrimitive := fieldType.ItemType.(*types.PrimitiveType)
@@ -56,45 +61,46 @@ func getEncodeProcedure(cStruct *types.CStruct, field *types.CField) (string, er
 			return "", fmt.Errorf("arrays of only primitive types are supported")
 		}
 
-		bufEnd := "end"
-		arrLen := fmt.Sprintf("%s->%s_len", cStruct.Name, fieldName)
-		index := "i"
-		arrElement := fmt.Sprintf("%s->%s[%s]", cStruct.Name, fieldName, index)
+		arrLen := fmt.Sprintf("%s_len", src)
+		const index = "i"
+		arrElement := fmt.Sprintf("%s[%s]", src, index)
 
-		primitiveTypeEncoderProc, err := primitiveType.GetEncodeProcedure(bufEnd, arrElement)
+		primitiveTypeEncoderProc, err := primitiveType.GetEncodeProcedure(dataEnd, arrElement)
 		if err != nil {
 			return "", err
 		}
 
 		return fmt.Sprintf(`
-			%s = mp_encode_array(buf, %s);
-			for (uint32_t i = 0; i < %s; ++i) {
+			%s = mp_encode_array(%s, %s);
+			for (uint32_t %s = 0; %s < %s; ++%s) {
 				%s = %s;
-			}
-		`, bufEnd, arrLen, arrLen, bufEnd, primitiveTypeEncoderProc), nil
+			} `,
+			dataEnd, dataEnd, arrLen,
+			index, index, arrLen, index,
+			dataEnd, primitiveTypeEncoderProc,
+		), nil
 
 	case *types.StringType:
-		src := fmt.Sprintf("%s->%s", cStruct.Name, fieldName)
-		procCall, err := fieldType.GetEncodeProcedure("end", src, fmt.Sprintf("%s->%s_len", cStruct.Name, fieldName))
+		strLen := fmt.Sprintf("%s_len", src)
+		procCall, err := fieldType.GetEncodeProcedure(dataEnd, src, strLen)
 		if err != nil {
 			return "", err
 		}
-		return fmt.Sprintf("%s = %s;", "end", procCall), nil
+		return fmt.Sprintf("%s = %s;", dataEnd, procCall), nil
 
 	case *types.StructType:
 		return fmt.Sprintf(`
-			err = encode_%s(&%s->%s, buf, buf_end);
+			err = encode_%s(&%s->%s, %s, %s);
 			if (err != 0) { return err; };
-		`, typeName, cStruct.Name, fieldName), nil
+		`, typeName, cStruct.Name, fieldName, buf, bufEnd), nil
 
 	case *types.PrimitiveType:
-		src := fmt.Sprintf("%s->%s", cStruct.Name, fieldName)
-		procCall, err := fieldType.GetEncodeProcedure("end", src)
+		procCall, err := fieldType.GetEncodeProcedure(dataEnd, src)
 		if err != nil {
 			return "", err
 		}
 
-		return fmt.Sprintf("%s = %s;", "end", procCall), nil
+		return fmt.Sprintf("%s = %s;", dataEnd, procCall), nil
 
 	default:
 		return "", fmt.Errorf("unsupported type")

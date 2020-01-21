@@ -40,7 +40,7 @@ const DecoderTemplate = `
 	return 0;
 
 wrong_field_count_error:
-/*	say_error("wrong '%s' fields count - %d, must be %d", ".Name", field_count, {{ len .Fields }});*/
+	say_error("wrong '%s' fields count - %d, must be %d", "{{ .Name }}", field_count, {{ len .Fields }});
 	return 1;
 too_big_array:
 	return 2;
