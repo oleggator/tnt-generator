@@ -12,6 +12,7 @@ import (
 func main() {
 	inputFile := flag.String("i", "schema.avsc", "avro schema")
 	outputDir := flag.String("o", "generated", "output directory")
+	format := flag.Bool("f", true, "format (require clang-format)")
 	flag.Parse()
 
 	// open sample avro scheme
@@ -38,7 +39,9 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	if err := generator.Format(modelsHPath, modelsCPath); err != nil {
-		log.Fatalln(err)
+	if *format {
+		if err := generator.Format(modelsHPath, modelsCPath); err != nil {
+			log.Fatalln(err)
+		}
 	}
 }
